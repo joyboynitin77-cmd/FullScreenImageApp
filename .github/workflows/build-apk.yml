@@ -29,10 +29,36 @@ jobs:
         with:
           gradle-version: "8.9"
 
-      - name: Find Android SDK Manager
+      - name: Install Android SDK
+        shell: bash
         run: |
-          SDK_ROOT="${ANDROID_HOME:-/usr/local/lib/android/sdk}"
-          SDKMANAGER="$(find "$SDK_ROOT/cmdline-tools" -type f -name sdkmanager | head -n 1)"
+          set -euo pipefail
+
+          SDK_ROOT="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}}"
+
+          SDKMANAGER="$(find "$SDK_ROOT/cmdline-tools" \
+            -type f -name sdkmanager -print -quit)"
 
           if [ -z "$SDKMANAGER" ]; then
-            echo "ERROR: sdkmanager not found"
+            echo "ERROR: Android SDK manager not found"
+            exit 1
+          fi
+
+          yes | "$SDKMANAGER" --licenses
+
+          "$SDKMANAGER" --install \
+            "platform-tools" \
+            "platforms;android-35" \
+            "build-tools;35.0.0"
+
+          echo "sdk.dir=$SDK_ROOT" > local.properties
+
+      - name: Build APK
+        run: gradle --no-daemon assembleDebug
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Lux-Image-APK
+          path: app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
