@@ -44,7 +44,7 @@ jobs:
             exit 1
           fi
 
-          yes | "$SDKMANAGER" --licenses
+          yes | "$SDKMANAGER" --licenses || true
 
           "$SDKMANAGER" --install \
             "platform-tools" \
